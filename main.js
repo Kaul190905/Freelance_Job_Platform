@@ -5,7 +5,7 @@ const GigDB = {
     logout() { localStorage.removeItem('gf_session'); },
     currentUser() { return JSON.parse(localStorage.getItem('gf_session')); },
     getToken() { const user = this.currentUser(); return user ? user.token : null; },
-    
+
     async authFetch(url, options = {}) {
         const token = this.getToken();
         const headers = {
@@ -72,18 +72,18 @@ document.addEventListener('DOMContentLoaded', () => {
                         body: JSON.stringify({ email, password })
                     });
                     if (!res.ok) throw new Error('Invalid email or password');
-                    
+
                     const data = await res.json();
                     if (data.role !== role) {
                         showToast(`Invalid role selection for this account.`, 'error');
                         return;
                     }
-                    
-                    GigDB.login({ 
-                        ...data, 
-                        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}` 
+
+                    GigDB.login({
+                        ...data,
+                        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`
                     });
-                    
+
                     window.location.href = role === 'CLIENT' ? 'dash-client.html' : 'dash-freelancer.html';
                 }
             } catch (err) {
@@ -210,12 +210,13 @@ async function renderClientProjects() {
             let actions = '';
             if (job.status === 'OPEN') {
                 actions = `<button class="btn btn-primary" style="font-size:0.8rem;padding:0.5rem 1rem;" onclick="renderBidsForJob(${job.id})">View Bids</button>`;
-            } else if (job.status === 'IN_PROGRESS') {
-                actions = `<button class="btn btn-primary" style="font-size:0.8rem;padding:0.5rem 1rem;" onclick="reviewAndPay(${job.id})">Release Payment</button>`;
             } else if (job.status === 'HIRED') {
-                actions = `<span style="font-size:0.8rem;color:var(--text-muted);">Assigned to ${job.freelancerName || 'Freelancer'}</span>`;
+                actions = `<button class="btn btn-primary" style="font-size:0.8rem;padding:0.5rem 1rem;background:linear-gradient(135deg,#4F46E5,#7C3AED);" onclick="reviewAndPay(${job.id})"><i data-lucide="credit-card" style="width:14px;height:14px;display:inline-block;vertical-align:middle;margin-right:4px;"></i> Pay via Razorpay</button>
+                           <span style="font-size:0.75rem;color:var(--text-muted);margin-left:0.5rem;">Assigned to ${job.freelancerName || 'Freelancer'}</span>`;
+            } else if (job.status === 'IN_PROGRESS') {
+                actions = `<span style="font-size:0.8rem;color:var(--secondary);font-weight:700;">Paid — Work In Progress</span>`;
             } else if (job.status === 'COMPLETED') {
-                actions = `<span style="font-size:0.8rem;color:var(--success);font-weight:700;">Paid & Completed</span>`;
+                actions = `<span style="font-size:0.8rem;color:var(--success);font-weight:700;">✓ Completed & Paid</span>`;
             }
 
             return `
@@ -246,7 +247,7 @@ async function renderClientProjects() {
 async function renderBidsForJob(jobId) {
     const bidsPanel = document.getElementById('quick-bids');
     if (!bidsPanel) return;
-    
+
     try {
         const res = await GigDB.authFetch(`${API_BASE}/client/jobs/${jobId}/bids`);
         const bids = await res.json();
@@ -290,19 +291,87 @@ async function assignFreelancer(bidId, name, jobId) {
     }
 }
 
+// ============================================
+// RAZORPAY PAYMENT FLOW
+// ============================================
+// IMPORTANT: Replace this with your actual Razorpay Test Key ID (same as in application.properties)
+const RAZORPAY_KEY_ID = 'rzp_test_SQey8mxbQVLoPd';
+
 async function reviewAndPay(jobId) {
-    // In this backend, we directly release payment
-    if (confirm('Are you sure you want to release the payment?')) {
-        try {
-            const res = await GigDB.authFetch(`${API_BASE}/payment/release/${jobId}`, { method: 'PUT' });
-            if (!res.ok) throw new Error('Failed to release payment');
-            showToast('Payment released successfully!');
-            await renderClientProjects();
-        } catch (err) {
-            showToast(err.message, 'error');
+    const user = GigDB.currentUser();
+    try {
+        // Step 1: Create Razorpay order on the backend
+        showToast('Creating payment order...', 'info');
+        const orderRes = await GigDB.authFetch(`${API_BASE}/payment/create-order/${jobId}`, {
+            method: 'POST'
+        });
+        if (!orderRes.ok) {
+            const errText = await orderRes.text();
+            throw new Error(errText || 'Failed to create payment order');
         }
+        const orderData = await orderRes.json();
+
+        // Step 2: Open Razorpay Checkout Widget
+        const options = {
+            key: RAZORPAY_KEY_ID,
+            amount: orderData.amount * 100, // Amount in paise
+            currency: orderData.currency || 'INR',
+            name: 'GigFlow',
+            description: `Payment for Job #${jobId}`,
+            order_id: orderData.razorpayOrderId,
+            handler: async function (response) {
+                // Step 3: Verify payment signature on the backend
+                try {
+                    showToast('Verifying payment...', 'info');
+                    const verifyRes = await GigDB.authFetch(`${API_BASE}/payment/verify`, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            razorpayOrderId: response.razorpay_order_id,
+                            razorpayPaymentId: response.razorpay_payment_id,
+                            razorpaySignature: response.razorpay_signature
+                        })
+                    });
+                    if (!verifyRes.ok) throw new Error('Payment verification failed');
+
+                    showToast('Payment successful! Releasing funds...', 'success');
+
+                    // Step 4: Release payment to freelancer
+                    const releaseRes = await GigDB.authFetch(`${API_BASE}/payment/release/${jobId}`, {
+                        method: 'PUT'
+                    });
+                    if (!releaseRes.ok) throw new Error('Failed to release payment');
+
+                    showToast('Payment released to freelancer!', 'success');
+                    await renderClientProjects();
+                } catch (err) {
+                    showToast(err.message, 'error');
+                }
+            },
+            prefill: {
+                name: user.name,
+                email: user.email
+            },
+            theme: {
+                color: '#4F46E5'
+            },
+            modal: {
+                ondismiss: function () {
+                    showToast('Payment cancelled', 'error');
+                }
+            }
+        };
+
+        const rzp = new Razorpay(options);
+        rzp.on('payment.failed', function (response) {
+            showToast(`Payment failed: ${response.error.description}`, 'error');
+        });
+        rzp.open();
+
+    } catch (err) {
+        showToast(err.message, 'error');
     }
 }
+
 
 // Post Job
 async function postNewJob() {
@@ -366,6 +435,13 @@ async function renderFreelancerJobs() {
     }
 }
 
+function openBidModal(jobId, jobTitle) {
+    const modal = document.getElementById('bid-modal');
+    modal.style.display = 'flex';
+    modal.dataset.jobId = jobId;
+    document.getElementById('bid-modal-title').innerText = `Bid on: ${jobTitle}`;
+}
+
 async function submitBid() {
     const user = GigDB.currentUser();
     const modal = document.getElementById('bid-modal');
@@ -381,7 +457,7 @@ async function submitBid() {
             body: JSON.stringify({ jobId, amount: Number(amount), proposal })
         });
         if (!res.ok) throw new Error('Failed to submit bid');
-        
+
         modal.style.display = 'none';
         document.getElementById('bid-form').reset();
         showToast('Bid placed successfully!');
@@ -398,9 +474,9 @@ async function renderFreelancerTaken() {
     if (!container) return;
 
     try {
-        const res = await GigDB.authFetch(`${API_BASE}/freelancer/my-bids`); 
+        const res = await GigDB.authFetch(`${API_BASE}/freelancer/my-bids`);
         const bids = await res.json();
-        
+
         // Filter for bids that were accepted (where the job is now assigned to this freelancer)
         const activeBids = bids.filter(b => b.status === 'ACCEPTED');
 
@@ -445,11 +521,7 @@ async function submitWork(jobId) {
     }
 }
 
-function submitWork(jobId) {
-    GigDB.updateJob(jobId, { status: 'submitted', submittedWork: true });
-    showToast('Work submitted! Waiting for client review & payment.');
-    renderFreelancerTaken();
-}
+
 
 // ============================================
 // SHARED RENDERERS (Profile, History, Wallet)
