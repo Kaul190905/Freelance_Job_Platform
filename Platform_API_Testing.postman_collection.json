@@ -1,0 +1,149 @@
+{
+  "info": {
+    "name": "Freelance Job Platform APIs",
+    "description": "API collection for testing User (Client) and Freelancer flows with JWT authentication and Razorpay Payments.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "Register Client",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "http://localhost:8080/api/auth/register", "protocol": "http", "host": [ "localhost" ], "port": "8080", "path": [ "api", "auth", "register" ] },
+            "body": { "mode": "raw", "raw": "{\n    \"name\": \"John Client\",\n    \"email\": \"client@example.com\",\n    \"password\": \"password\",\n    \"role\": \"CLIENT\"\n}" }
+          }
+        },
+        {
+          "name": "Register Freelancer",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "http://localhost:8080/api/auth/register", "protocol": "http", "host": [ "localhost" ], "port": "8080", "path": [ "api", "auth", "register" ] },
+            "body": { "mode": "raw", "raw": "{\n    \"name\": \"Alice Freelancer\",\n    \"email\": \"freelancer@example.com\",\n    \"password\": \"password\",\n    \"role\": \"FREELANCER\"\n}" }
+          }
+        },
+        {
+          "name": "Login Client (Gets JWT)",
+          "event": [ { "listen": "test", "script": { "exec": [ "var jsonData = pm.response.json();", "pm.environment.set(\"client_token\", jsonData.token);" ], "type": "text/javascript" } } ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "http://localhost:8080/api/auth/login", "protocol": "http", "host": [ "localhost" ], "port": "8080", "path": [ "api", "auth", "login" ] },
+            "body": { "mode": "raw", "raw": "{\n    \"email\": \"client@example.com\",\n    \"password\": \"password\"\n}" }
+          }
+        },
+        {
+          "name": "Login Freelancer (Gets JWT)",
+          "event": [ { "listen": "test", "script": { "exec": [ "var jsonData = pm.response.json();", "pm.environment.set(\"freelancer_token\", jsonData.token);" ], "type": "text/javascript" } } ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "http://localhost:8080/api/auth/login", "protocol": "http", "host": [ "localhost" ], "port": "8080", "path": [ "api", "auth", "login" ] },
+            "body": { "mode": "raw", "raw": "{\n    \"email\": \"freelancer@example.com\",\n    \"password\": \"password\"\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Client Flow",
+      "item": [
+        {
+          "name": "Post Job",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{client_token}}" } ],
+            "url": { "raw": "http://localhost:8080/api/client/jobs", "protocol": "http", "host": [ "localhost" ], "port": "8080", "path": [ "api", "client", "jobs" ] },
+            "body": { "mode": "raw", "raw": "{\n    \"title\": \"Build an E-commerce website\",\n    \"description\": \"I need a React and Node store with Razorpay\",\n    \"budget\": 50000.0\n}" }
+          }
+        },
+        {
+          "name": "View My Jobs",
+          "request": {
+            "method": "GET",
+            "header": [ { "key": "Authorization", "value": "Bearer {{client_token}}" } ],
+            "url": { "raw": "http://localhost:8080/api/client/my-jobs", "protocol": "http", "host": [ "localhost" ], "port": "8080", "path": [ "api", "client", "my-jobs" ] }
+          }
+        },
+        {
+          "name": "View Bids for Job",
+          "request": {
+            "method": "GET",
+            "header": [ { "key": "Authorization", "value": "Bearer {{client_token}}" } ],
+            "url": { "raw": "http://localhost:8080/api/client/jobs/1/bids", "protocol": "http", "host": [ "localhost" ], "port": "8080", "path": [ "api", "client", "jobs", "1", "bids" ] }
+          }
+        },
+        {
+          "name": "Accept Bid (Select Freelancer)",
+          "request": {
+            "method": "PUT",
+            "header": [ { "key": "Authorization", "value": "Bearer {{client_token}}" } ],
+            "url": { "raw": "http://localhost:8080/api/client/bids/1/accept", "protocol": "http", "host": [ "localhost" ], "port": "8080", "path": [ "api", "client", "bids", "1", "accept" ] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Freelancer Flow",
+      "item": [
+        {
+          "name": "Browse Open Jobs",
+          "request": {
+            "method": "GET",
+            "header": [ { "key": "Authorization", "value": "Bearer {{freelancer_token}}" } ],
+            "url": { "raw": "http://localhost:8080/api/freelancer/jobs", "protocol": "http", "host": [ "localhost" ], "port": "8080", "path": [ "api", "freelancer", "jobs" ] }
+          }
+        },
+        {
+          "name": "Submit Bid",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{freelancer_token}}" } ],
+            "url": { "raw": "http://localhost:8080/api/freelancer/bids", "protocol": "http", "host": [ "localhost" ], "port": "8080", "path": [ "api", "freelancer", "bids" ] },
+            "body": { "mode": "raw", "raw": "{\n    \"jobId\": 1,\n    \"amount\": 45000.0,\n    \"proposal\": \"I am an expert in React/Node. I can do this in 2 weeks.\"\n}" }
+          }
+        },
+        {
+          "name": "View My Bids",
+          "request": {
+            "method": "GET",
+            "header": [ { "key": "Authorization", "value": "Bearer {{freelancer_token}}" } ],
+            "url": { "raw": "http://localhost:8080/api/freelancer/my-bids", "protocol": "http", "host": [ "localhost" ], "port": "8080", "path": [ "api", "freelancer", "my-bids" ] }
+          }
+        },
+        {
+          "name": "Mark Job Completed",
+          "request": {
+            "method": "PUT",
+            "header": [ { "key": "Authorization", "value": "Bearer {{freelancer_token}}" } ],
+            "url": { "raw": "http://localhost:8080/api/freelancer/jobs/1/complete", "protocol": "http", "host": [ "localhost" ], "port": "8080", "path": [ "api", "freelancer", "jobs", "1", "complete" ] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Payments (Client Only)",
+      "item": [
+        {
+          "name": "Create Razorpay Order (Pay to Escrow)",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Authorization", "value": "Bearer {{client_token}}" } ],
+            "url": { "raw": "http://localhost:8080/api/payment/create-order/1", "protocol": "http", "host": [ "localhost" ], "port": "8080", "path": [ "api", "payment", "create-order", "1" ] }
+          }
+        },
+        {
+          "name": "Release Payment To Freelancer",
+          "request": {
+            "method": "PUT",
+            "header": [ { "key": "Authorization", "value": "Bearer {{client_token}}" } ],
+            "url": { "raw": "http://localhost:8080/api/payment/release/1", "protocol": "http", "host": [ "localhost" ], "port": "8080", "path": [ "api", "payment", "release", "1" ] }
+          }
+        }
+      ]
+    }
+  ]
+}
