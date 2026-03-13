@@ -1,13 +1,34 @@
 package com.example.demo.controller;
 
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.demo.dto.ApiResponse;
+import com.example.demo.dto.LoginRequest;
+import com.example.demo.dto.RegisterRequest;
+import com.example.demo.service.AuthService;
+
+import jakarta.validation.Valid;
+
 @RestController
+@RequestMapping("/api/auth")
 public class AuthController {
 
-    @GetMapping("/auth/test")
-    public String authTest() {
-        return "Auth controller working";
+    private final AuthService authService;
+
+    public AuthController(AuthService authService) {
+        this.authService = authService;
+    }
+
+    @PostMapping("/register")
+    public ApiResponse<String> register(@Valid @RequestBody RegisterRequest request) {
+        return authService.register(request);
+    }
+
+    @PostMapping("/login")
+    public ApiResponse<String> login(@Valid @RequestBody LoginRequest request) {
+        return authService.login(request);
     }
 }
