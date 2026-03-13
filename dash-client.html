@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client Dashboard | GigFlow</title>
+    <link rel="stylesheet" href="index.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body style="background: #f8fafc;">
+    
+    <nav class="glass" style="padding: 1rem 0; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100;">
+        <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="logo" style="font-size: 1.25rem; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 0.5rem;">
+                <i data-lucide="zap"></i> GigFlow
+            </div>
+            <div style="display: flex; gap: 1.5rem; align-items: center;">
+                <span style="font-weight: 600; font-size: 0.875rem; color: var(--text-muted);">Client Workspace</span>
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <img id="nav-avatar" src="" style="width: 32px; height: 32px; border-radius: 50%; background: var(--bg-main);">
+                    <span id="nav-username" style="font-weight: 700;">Client</span>
+                </div>
+                <button id="logout-btn" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="dashboard-layout">
+        <aside class="sidebar">
+            <div class="sidebar-item active" onclick="switchView('view-projects')">
+                <i data-lucide="layout"></i> My Projects
+            </div>
+            <div class="sidebar-item" onclick="switchView('view-post')">
+                <i data-lucide="plus-circle"></i> Post New Job
+            </div>
+            <div class="sidebar-item" onclick="switchView('view-profile')">
+                <i data-lucide="user"></i> Profile Settings
+            </div>
+            <div class="sidebar-item" onclick="switchView('view-history')">
+                <i data-lucide="history"></i> History & Payments
+            </div>
+            <div class="sidebar-item" onclick="switchView('view-wallet')">
+                <i data-lucide="wallet"></i> My Wallet
+            </div>
+        </aside>
+
+        <main class="content-area">
+            <!-- Projects View -->
+            <div id="view-projects" class="dashboard-view">
+                <header style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem;">
+                    <div>
+                        <h1 style="font-size: 1.75rem; font-weight: 800;">Active Projects</h1>
+                        <p style="color: var(--text-muted);">Track progress and manage biddings.</p>
+                    </div>
+                </header>
+                <div style="display: grid; grid-template-columns: 1.8fr 1.2fr; gap: 2rem;">
+                    <div id="projects-list"><!-- Dynamic --></div>
+                    <div id="quick-bids"><!-- Dynamic --></div>
+                </div>
+            </div>
+
+            <!-- Post View -->
+            <div id="view-post" class="dashboard-view" style="display: none;">
+                <div class="card" style="max-width: 800px; margin: 0 auto; padding: 3rem;">
+                    <h2 style="margin-bottom: 2rem;">Post a New Project</h2>
+                    <form id="post-form" onsubmit="event.preventDefault(); postNewJob();">
+                        <div style="margin-bottom: 1.5rem;">
+                            <label style="display: block; font-size: 0.875rem; font-weight: 700; margin-bottom: 0.5rem;">Job Name</label>
+                            <input type="text" id="job-title" placeholder="Enter job title" required style="width: 100%; padding: 0.8rem; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+                        </div>
+                        <div style="margin-bottom: 1.5rem;">
+                            <label style="display: block; font-size: 0.875rem; font-weight: 700; margin-bottom: 0.5rem;">Details & Requirements</label>
+                            <textarea id="job-desc" rows="4" placeholder="List your specific requirements..." required style="width: 100%; padding: 0.8rem; border-radius: var(--radius-sm); border: 1px solid var(--border); resize: none;"></textarea>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+                            <div>
+                                <label style="display: block; font-size: 0.875rem; font-weight: 700; margin-bottom: 0.5rem;">Deadline</label>
+                                <input type="date" id="job-deadline" required style="width: 100%; padding: 0.8rem; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 0.875rem; font-weight: 700; margin-bottom: 0.5rem;">Budget (₹)</label>
+                                <input type="number" id="job-budget" placeholder="Amount in Rupees" required style="width: 100%; padding: 0.8rem; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 1rem;">Post Now</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Profile View -->
+            <div id="view-profile" class="dashboard-view" style="display: none;">
+                <div class="card" style="max-width: 600px; margin: 0 auto;">
+                    <div style="text-align: center; margin-bottom: 2rem;">
+                        <img id="profile-avatar" src="" style="width: 100px; height: 100px; border-radius: 50%; background: var(--bg-main); margin-bottom: 1rem;">
+                        <h2 id="profile-name">–</h2>
+                        <p style="color: var(--text-muted);"><span id="profile-role">–</span></p>
+                    </div>
+                    <div style="display: grid; gap: 1.5rem;">
+                        <div>
+                            <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-muted);">Email</label>
+                            <p id="profile-email" style="font-weight: 600;">–</p>
+                        </div>
+                        <div style="border-top: 1px solid var(--border); padding-top: 1.5rem;">
+                            <h3 style="font-size: 1rem; margin-bottom: 1rem;">Change Password</h3>
+                            <input type="password" id="new-password" placeholder="New Password" style="width: 100%; padding: 0.8rem; border-radius: var(--radius-sm); border: 1px solid var(--border); margin-bottom: 1rem;">
+                            <button class="btn btn-primary" onclick="updatePassword()">Save New Password</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- History View -->
+            <div id="view-history" class="dashboard-view" style="display: none;">
+                <h2 style="margin-bottom: 2rem;">History & Payments</h2>
+                <div class="card" style="padding: 0; overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead style="background: var(--bg-main); text-align: left;">
+                            <tr>
+                                <th style="padding: 1rem 1.5rem;">Project</th>
+                                <th style="padding: 1rem 1.5rem;">Freelancer</th>
+                                <th style="padding: 1rem 1.5rem;">Date</th>
+                                <th style="padding: 1rem 1.5rem;">Amount</th>
+                                <th style="padding: 1rem 1.5rem;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-body"><!-- Dynamic --></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Wallet View -->
+            <div id="view-wallet" class="dashboard-view" style="display: none;">
+                <h2 style="margin-bottom: 2rem;">My Wallet</h2>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 3rem;">
+                    <div class="card" style="background: var(--primary); color: white;">
+                        <p style="font-size: 0.875rem; opacity: 0.8;">Balance</p>
+                        <h2 id="wallet-balance" style="font-size: 2rem;">₹0</h2>
+                    </div>
+                    <div class="card">
+                        <p style="font-size: 0.875rem; color: var(--text-muted);">In Escrow</p>
+                        <h2 id="wallet-escrow" style="font-size: 2rem;">₹0</h2>
+                    </div>
+                    <div class="card">
+                        <p style="font-size: 0.875rem; color: var(--text-muted);">Total Spent</p>
+                        <h2 id="wallet-total" style="font-size: 2rem;">₹0</h2>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Review & Pay Modal -->
+    <div id="rate-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center;">
+        <div class="card animate-fade" style="width: 100%; max-width: 500px; padding: 2.5rem; position: relative;">
+            <button onclick="document.getElementById('rate-modal').style.display='none'" style="position: absolute; top: 1rem; right: 1rem; background: none; color: var(--text-muted);"><i data-lucide="x"></i></button>
+            <h2 id="rate-modal-title" style="margin-bottom: 0.5rem;">Review Work</h2>
+            <p id="rate-modal-freelancer" style="color: var(--text-muted); margin-bottom: 1.5rem;"></p>
+            <label style="display: block; font-size: 0.875rem; font-weight: 700; margin-bottom: 0.5rem;">Review / Feedback</label>
+            <textarea id="rate-review-text" rows="4" placeholder="How was the quality of work?" style="width: 100%; padding: 0.8rem; border-radius: var(--radius-sm); border: 1px solid var(--border); margin-bottom: 1.5rem; resize: none;"></textarea>
+            <button class="btn btn-primary" style="width: 100%;" onclick="submitReviewAndPay()">Approve & Release Payment</button>
+        </div>
+    </div>
+
+    <script src="main.js"></script>
+    <script>lucide.createIcons();</script>
+</body>
+</html>

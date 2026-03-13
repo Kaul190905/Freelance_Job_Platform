@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GigFlow | Your Freelance Career Starts Here</title>
+    <link rel="stylesheet" href="index.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Poppins:wght@700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    
+    <header class="glass" style="position: sticky; top: 0; z-index: 1000;">
+        <nav class="container" style="display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 0;">
+            <div class="logo" style="font-size: 1.5rem; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 0.5rem;">
+                <i data-lucide="zap"></i> GigFlow
+            </div>
+            <ul style="display: flex; gap: 2.5rem; align-items: center; font-weight: 600;">
+                <li><a href="#how">How it Works</a></li>
+                <li><a href="#features">Features</a></li>
+                <li><a href="auth.html" class="btn btn-secondary">Login</a></li>
+                <li><a href="auth.html" class="btn btn-primary">Join Now</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero container" style="display: flex; align-items: center; gap: 4rem; min-height: 80vh;">
+            <div style="flex: 1;" class="animate-fade">
+                <h1 style="font-size: 4rem; line-height: 1.1; margin-bottom: 2rem; font-family: 'Poppins', sans-serif;">Connect with Top <span style="color: var(--primary)">Talent</span> Instantly</h1>
+                <p style="font-size: 1.25rem; color: var(--text-muted); margin-bottom: 2.5rem; max-width: 500px;">Experience the future of freelance work. Bidding, tracking, and payments made seamless.</p>
+                <div style="display: flex; gap: 1.5rem;">
+                    <a href="auth.html?role=client" class="btn btn-primary" style="padding: 1rem 2rem;">Hire Talent</a>
+                    <a href="auth.html?role=freelancer" class="btn btn-secondary" style="padding: 1rem 2rem;">Find Work</a>
+                </div>
+            </div>
+            <div style="flex: 1;">
+                <div class="card glass" style="padding: 1rem; border-radius: 2rem; transform: rotate(2deg);">
+                    <img id="hero-dynamic-img" src="hero_image.png" alt="Freelance Worker" style="width: 100%; border-radius: 1.5rem; box-shadow: var(--shadow-lg);">
+                </div>
+            </div>
+        </section>
+
+        <section id="how" style="background: var(--bg-dark); color: white; padding: 6rem 0;">
+            <div class="container">
+                <h2 class="section-title">Seamless Workflow</h2>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 3rem; text-align: center;">
+                    <div class="animate-fade">
+                        <div style="width: 80px; height: 80px; background: rgba(255,255,255,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 2rem;">
+                            <i data-lucide="file-plus" style="width: 40px; height: 40px; color: var(--secondary);"></i>
+                        </div>
+                        <h3>Post Requirements</h3>
+                        <p style="opacity: 0.7; margin-top: 1rem;">Clients post jobs with specific requirements and deadlines.</p>
+                    </div>
+                    <div class="animate-fade" style="animation-delay: 0.2s;">
+                        <div style="width: 80px; height: 80px; background: rgba(255,255,255,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 2rem;">
+                            <i data-lucide="gavel" style="width: 40px; height: 40px; color: var(--accent);"></i>
+                        </div>
+                        <h3>Bidding System</h3>
+                        <p style="opacity: 0.7; margin-top: 1rem;">Talented freelancers bid and showcase their expertise.</p>
+                    </div>
+                    <div class="animate-fade" style="animation-delay: 0.4s;">
+                        <div style="width: 80px; height: 80px; background: rgba(255,255,255,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 2rem;">
+                            <i data-lucide="shield-check" style="width: 40px; height: 40px; color: var(--success);"></i>
+                        </div>
+                        <h3>Safe Payments</h3>
+                        <p style="opacity: 0.7; margin-top: 1rem;">Escrow protection ensures quality and secure transfers.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="features" class="container">
+            <h2 class="section-title">Why Choose GigFlow?</h2>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 2rem;">
+                <div class="card glass">
+                    <i data-lucide="trending-up" style="color: var(--primary); margin-bottom: 1rem;"></i>
+                    <h3>Growth Focused</h3>
+                    <p style="color: var(--text-muted);">Scale your business or career with advanced analytic tools.</p>
+                </div>
+                <div class="card glass">
+                    <i data-lucide="users" style="color: var(--secondary); margin-bottom: 1rem;"></i>
+                    <h3>Verified Community</h3>
+                    <p style="color: var(--text-muted);">Work with top-tier professionals vetted by our system.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer style="margin-top: 5rem; padding-bottom: 3rem; text-align: center; border-top: 1px solid var(--border); padding-top: 3rem;">
+        <p style="color: var(--text-muted);">&copy; 2026 GigFlow Inc. All rights reserved.</p>
+    </footer>
+
+    <script src="main.js"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

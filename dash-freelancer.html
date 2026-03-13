@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Freelancer Dashboard | GigFlow</title>
+    <link rel="stylesheet" href="index.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body style="background: #f8fafc;">
+    
+    <nav class="glass" style="padding: 1rem 0; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100;">
+        <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="logo" style="font-size: 1.25rem; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 0.5rem;">
+                <i data-lucide="zap"></i> GigFlow
+            </div>
+            <div style="display: flex; gap: 1.5rem; align-items: center;">
+                <span style="font-weight: 600; font-size: 0.875rem; color: var(--text-muted);">Talent Workspace</span>
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <img id="nav-avatar" src="" style="width: 32px; height: 32px; border-radius: 50%; background: var(--bg-main);">
+                    <span id="nav-username" style="font-weight: 700;">Freelancer</span>
+                </div>
+                <button id="logout-btn" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="dashboard-layout">
+        <aside class="sidebar">
+            <div class="sidebar-item active" onclick="switchView('view-explore')">
+                <i data-lucide="compass"></i> Browse Jobs
+            </div>
+            <div class="sidebar-item" onclick="switchView('view-taken')">
+                <i data-lucide="briefcase"></i> My Projects
+            </div>
+            <div class="sidebar-item" onclick="switchView('view-profile')">
+                <i data-lucide="user"></i> Profile Settings
+            </div>
+            <div class="sidebar-item" onclick="switchView('view-history')">
+                <i data-lucide="history"></i> History & Records
+            </div>
+            <div class="sidebar-item" onclick="switchView('view-wallet')">
+                <i data-lucide="wallet"></i> My Wallet
+            </div>
+        </aside>
+
+        <main class="content-area">
+            <!-- Browse Jobs -->
+            <div id="view-explore" class="dashboard-view">
+                <h1 style="font-size: 1.75rem; font-weight: 800; margin-bottom: 2rem;">Available Opportunities</h1>
+                <div id="job-feed"><!-- Dynamic --></div>
+            </div>
+
+            <!-- My Projects (Taken) -->
+            <div id="view-taken" class="dashboard-view" style="display: none;">
+                <h1 style="font-size: 1.75rem; font-weight: 800; margin-bottom: 2rem;">My Projects (Assigned)</h1>
+                <div id="taken-list"><!-- Dynamic --></div>
+            </div>
+
+            <!-- Profile -->
+            <div id="view-profile" class="dashboard-view" style="display: none;">
+                <div class="card" style="max-width: 600px; margin: 0 auto;">
+                    <div style="text-align: center; margin-bottom: 2rem;">
+                        <img id="profile-avatar" src="" style="width: 100px; height: 100px; border-radius: 50%; background: var(--bg-main); margin-bottom: 1rem;">
+                        <h2 id="profile-name">–</h2>
+                        <p style="color: var(--text-muted);"><span id="profile-role">–</span></p>
+                    </div>
+                    <div style="display: grid; gap: 1.5rem;">
+                        <div>
+                            <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-muted);">Email</label>
+                            <p id="profile-email" style="font-weight: 600;">–</p>
+                        </div>
+                        <div style="border-top: 1px solid var(--border); padding-top: 1.5rem;">
+                            <h3 style="font-size: 1rem; margin-bottom: 1rem;">Change Password</h3>
+                            <input type="password" id="new-password" placeholder="New Password" style="width: 100%; padding: 0.8rem; border-radius: var(--radius-sm); border: 1px solid var(--border); margin-bottom: 1rem;">
+                            <button class="btn btn-primary" onclick="updatePassword()">Save New Password</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- History -->
+            <div id="view-history" class="dashboard-view" style="display: none;">
+                <h2 style="margin-bottom: 2rem;">Jobs History & Records</h2>
+                <div class="card" style="padding: 0; overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead style="background: var(--bg-main); text-align: left;">
+                            <tr>
+                                <th style="padding: 1rem 1.5rem;">Job Name</th>
+                                <th style="padding: 1rem 1.5rem;">Client</th>
+                                <th style="padding: 1rem 1.5rem;">Date</th>
+                                <th style="padding: 1rem 1.5rem;">Payment</th>
+                                <th style="padding: 1rem 1.5rem;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-body"><!-- Dynamic --></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Wallet -->
+            <div id="view-wallet" class="dashboard-view" style="display: none;">
+                <h2 style="margin-bottom: 2rem;">My Wallet & Earnings</h2>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 3rem;">
+                    <div class="card" style="background: var(--secondary); color: white;">
+                        <p style="font-size: 0.875rem; opacity: 0.8;">Available</p>
+                        <h2 id="wallet-balance" style="font-size: 2rem;">₹0</h2>
+                    </div>
+                    <div class="card">
+                        <p style="font-size: 0.875rem; color: var(--text-muted);">Pending (Escrow)</p>
+                        <h2 id="wallet-escrow" style="font-size: 2rem;">₹0</h2>
+                    </div>
+                    <div class="card">
+                        <p style="font-size: 0.875rem; color: var(--text-muted);">Total Earned</p>
+                        <h2 id="wallet-total" style="font-size: 2rem;">₹0</h2>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Bid Modal -->
+    <div id="bid-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center;">
+        <div class="card animate-fade" style="width: 100%; max-width: 500px; padding: 2.5rem; position: relative;">
+            <button onclick="document.getElementById('bid-modal').style.display='none'" style="position: absolute; top: 1rem; right: 1rem; background: none; color: var(--text-muted);"><i data-lucide="x"></i></button>
+            <h2 id="bid-modal-title" style="margin-bottom: 1.5rem;">Place a Bid</h2>
+            <form id="bid-form" onsubmit="event.preventDefault(); submitBid();">
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; font-size: 0.875rem; font-weight: 700; margin-bottom: 0.5rem;">Your Bid Amount (₹)</label>
+                    <input type="number" id="bid-amount" placeholder="Amount in Rupees" required style="width: 100%; padding: 0.8rem; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+                </div>
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; font-size: 0.875rem; font-weight: 700; margin-bottom: 0.5rem;">Your Proposal</label>
+                    <textarea id="bid-proposal" rows="4" placeholder="Why are you the best fit?" required style="width: 100%; padding: 0.8rem; border-radius: var(--radius-sm); border: 1px solid var(--border); resize: none;"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 1rem;">Submit Bid</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="main.js"></script>
+    <script>lucide.createIcons();</script>
+</body>
+</html>

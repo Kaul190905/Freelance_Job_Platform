@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Join GigFlow | Gateway to Opportunities</title>
+    <link rel="stylesheet" href="index.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body style="height: 100vh; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at bottom left, rgba(79, 70, 229, 0.1), transparent);">
+    
+    <div class="animate-fade" style="width: 100%; max-width: 450px; padding: 1rem;">
+        <a href="index.html" style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-muted); margin-bottom: 2rem; font-weight: 600;">
+            <i data-lucide="arrow-left" style="width: 18px;"></i> Back to home
+        </a>
+
+        <div class="card" style="padding: 3rem;">
+            <div style="text-align: center; margin-bottom: 2.5rem;">
+                <div style="background: var(--primary); width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; color: white;">
+                    <i data-lucide="zap"></i>
+                </div>
+                <h1 style="font-size: 1.75rem; font-weight: 800;">Welcome Back</h1>
+                <p style="color: var(--text-muted); margin-top: 0.5rem;">Choose your path and join the flow.</p>
+            </div>
+
+            <form id="auth-form">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem;">
+                    <label class="role-selector" style="cursor: pointer;">
+                        <input type="radio" name="role" value="client" checked style="display: none;">
+                        <div class="role-card glass" style="padding: 1.5rem; border-radius: var(--radius-md); text-align: center; border: 2px solid var(--border);">
+                            <i data-lucide="briefcase" style="margin-bottom: 0.5rem; color: var(--primary);"></i>
+                            <p style="font-weight: 700; font-size: 0.875rem;">Client</p>
+                        </div>
+                    </label>
+                    <label class="role-selector" style="cursor: pointer;">
+                        <input type="radio" name="role" value="freelancer" style="display: none;">
+                        <div class="role-card glass" style="padding: 1.5rem; border-radius: var(--radius-md); text-align: center; border: 2px solid var(--border);">
+                            <i data-lucide="user" style="margin-bottom: 0.5rem; color: var(--secondary);"></i>
+                            <p style="font-weight: 700; font-size: 0.875rem;">Talent</p>
+                        </div>
+                    </label>
+                </div>
+
+                <!-- Signup-only fields -->
+                <div id="signup-fields" style="display: none; margin-bottom: 1.5rem;">
+                    <label style="display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Full Name</label>
+                    <input type="text" id="auth-name" placeholder="Your full name" style="width: 100%; padding: 0.75rem 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-main);">
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Email Address</label>
+                    <input type="email" id="auth-email" required placeholder="name@company.com" style="width: 100%; padding: 0.75rem 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-main);">
+                </div>
+
+                <div style="margin-bottom: 2rem;">
+                    <label style="display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Password</label>
+                    <input type="password" id="auth-password" required placeholder="••••••••" style="width: 100%; padding: 0.75rem 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-main);">
+                </div>
+
+                <button type="submit" id="auth-submit-btn" class="btn btn-primary" style="width: 100%; padding: 1rem;">
+                    Start Working
+                </button>
+            </form>
+
+            <p style="text-align: center; margin-top: 2rem; font-size: 0.875rem; color: var(--text-muted);">
+                <span id="auth-toggle-text">Don't have an account?</span> <a href="#" id="auth-toggle" style="color: var(--primary); font-weight: 700;">Sign up</a>
+            </p>
+        </div>
+    </div>
+
+    <style>
+        input[type="radio"]:checked + .role-card {
+            border-color: var(--primary) !important;
+            background: rgba(79, 70, 229, 0.05) !important;
+        }
+        .role-card:hover { border-color: var(--primary); }
+    </style>
+
+    <script src="main.js"></script>
+    <script>lucide.createIcons();</script>
+</body>
+</html>
