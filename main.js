@@ -1,8 +1,5 @@
 // ============================================
-// GigFlow - Frontend API Integration Layer
-// ============================================
-// Connects to Spring Boot backend (port 8080)
-// Falls back to localStorage when backend is down
+// GigFlow - Dynamic Data Layer (localStorage)
 // ============================================
 
 const API_BASE = 'http://localhost:8080/api';
@@ -90,69 +87,101 @@ const API = {
 // Offline Fallback - GigDB (localStorage)
 // ============================================
 const GigDB = {
+    // --- Core Helpers ---
     _get(key) { return JSON.parse(localStorage.getItem(key)) || []; },
     _set(key, val) { localStorage.setItem(key, JSON.stringify(val)); },
+
+    // --- Users ---
     getUsers() { return this._get('gf_users'); },
     addUser(user) {
         const users = this.getUsers();
         user.id = Date.now();
         user.avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`;
+        user.wallet = { balance: 0, escrow: 0, totalSpent: 0, totalEarned: 0 };
         users.push(user);
         this._set('gf_users', users);
         return user;
     },
     findUser(email) { return this.getUsers().find(u => u.email === email); },
+    updateUser(email, updates) {
+        const users = this.getUsers().map(u => u.email === email ? { ...u, ...updates } : u);
+        this._set('gf_users', users);
+    },
+
+    // --- Session ---
+    login(user) { this._set('gf_session', user); },
+    logout() { localStorage.removeItem('gf_session'); },
+    currentUser() { return JSON.parse(localStorage.getItem('gf_session')); },
+
+    // --- Jobs ---
     getJobs() { return this._get('gf_jobs'); },
     addJob(job) {
         const jobs = this.getJobs();
-        job.id = Date.now(); job.status = 'OPEN'; job.createdAt = new Date().toISOString();
-        jobs.push(job); this._set('gf_jobs', jobs); return job;
+        job.id = Date.now();
+        job.status = 'open';
+        job.createdAt = new Date().toISOString();
+        job.assignedTo = null;
+        job.submittedWork = false;
+        job.paid = false;
+        jobs.push(job);
+        this._set('gf_jobs', jobs);
+        return job;
     },
     updateJob(id, updates) {
         const jobs = this.getJobs().map(j => j.id === id ? { ...j, ...updates } : j);
         this._set('gf_jobs', jobs);
     },
     getJobsByClient(email) { return this.getJobs().filter(j => j.clientEmail === email); },
-    getOpenJobs() { return this.getJobs().filter(j => j.status === 'OPEN'); },
+    getOpenJobs() { return this.getJobs().filter(j => j.status === 'open'); },
     getJobsForFreelancer(email) { return this.getJobs().filter(j => j.assignedTo === email); },
+
+    // --- Bids ---
     getBids() { return this._get('gf_bids'); },
     addBid(bid) {
         const bids = this.getBids();
-        bid.id = Date.now(); bid.status = 'PENDING'; bids.push(bid);
-        this._set('gf_bids', bids); return bid;
+        bid.id = Date.now();
+        bid.createdAt = new Date().toISOString();
+        bids.push(bid);
+        this._set('gf_bids', bids);
+        return bid;
     },
     getBidsForJob(jobId) { return this.getBids().filter(b => b.jobId === jobId); },
     getBidsByFreelancer(email) { return this.getBids().filter(b => b.freelancerEmail === email); },
+
+    // --- History ---
+    getHistory() { return this._get('gf_history'); },
+    addHistory(entry) {
+        const history = this.getHistory();
+        entry.id = Date.now();
+        entry.date = new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
+        history.push(entry);
+        this._set('gf_history', history);
+    },
+
+    // --- Seed Data (first visit only) ---
     seed() {
         if (localStorage.getItem('gf_seeded')) return;
-        this.addUser({ name: 'Alex Client', email: 'alex@techcorp.com', password: '123456', role: 'CLIENT' });
-        this.addUser({ name: 'Sarah Dev', email: 'sarah@dev.com', password: '123456', role: 'FREELANCER' });
+
+        // Seed users
+        this.addUser({ name: 'Alex Client', email: 'alex@techcorp.com', password: '123456', role: 'client' });
+        this.addUser({ name: 'Sarah Dev', email: 'sarah@dev.com', password: '123456', role: 'freelancer' });
+        this.addUser({ name: 'Rahul Sharma', email: 'rahul@design.com', password: '123456', role: 'freelancer' });
+
+        // Seed jobs
         const j1 = this.addJob({ title: 'E-commerce Website Redesign', description: 'Convert Shopify store to custom React frontend.', budget: 150000, deadline: '2026-04-01', clientEmail: 'alex@techcorp.com', clientName: 'Alex Client' });
-        this.addBid({ jobId: j1.id, jobTitle: j1.title, freelancerEmail: 'sarah@dev.com', freelancerName: 'Sarah Dev', amount: 140000, proposal: 'I can finish this in 4 days. Expert in React & Shopify.' });
+        const j2 = this.addJob({ title: 'Python Backend API', description: 'Build REST API for investment platform using FastAPI.', budget: 200000, deadline: '2026-04-15', clientEmail: 'alex@techcorp.com', clientName: 'Alex Client' });
+
+        // Seed bids
+        this.addBid({ jobId: j1.id, jobTitle: j1.title, freelancerEmail: 'sarah@dev.com', freelancerName: 'Sarah Dev', amount: 140000, proposal: 'I can finish this in 4 days. Expert in React & Shopify.', rating: 4.8 });
+        this.addBid({ jobId: j1.id, jobTitle: j1.title, freelancerEmail: 'rahul@design.com', freelancerName: 'Rahul Sharma', amount: 130000, proposal: 'UI/UX specialist with 3 years experience in e-commerce.', rating: 4.5 });
+        this.addBid({ jobId: j2.id, jobTitle: j2.title, freelancerEmail: 'sarah@dev.com', freelancerName: 'Sarah Dev', amount: 185000, proposal: 'Senior Python developer. Can deliver production-ready API.', rating: 4.8 });
+
         localStorage.setItem('gf_seeded', 'true');
     }
 };
+
+// Seed on first load
 GigDB.seed();
-
-// Track if backend is available
-let backendAvailable = true;
-async function checkBackend() {
-    try {
-        await fetch(`${API_BASE}/auth/login`, { method: 'OPTIONS' });
-        backendAvailable = true;
-    } catch {
-        backendAvailable = false;
-        console.warn('Backend not available. Using localStorage fallback.');
-    }
-}
-checkBackend();
-
-// ============================================
-// Session Helpers
-// ============================================
-function getSession() { return JSON.parse(localStorage.getItem('gf_session')); }
-function setSession(data) { localStorage.setItem('gf_session', JSON.stringify(data)); }
-function clearSession() { localStorage.removeItem('gf_session'); }
 
 // ============================================
 // Auth Logic
@@ -184,54 +213,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
         authForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const role = document.querySelector('input[name="role"]:checked').value;
+            const role = document.querySelector('input[name="role"]:checked').value.toUpperCase(); // CLIENT or FREELANCER
             const email = document.getElementById('auth-email').value;
             const password = document.getElementById('auth-password').value;
             const submitBtn = document.getElementById('auth-submit-btn');
             submitBtn.disabled = true;
             submitBtn.innerText = 'Please wait...';
 
-            try {
-                if (isSignup) {
-                    const name = document.getElementById('auth-name').value;
-                    if (!name) { showToast('Please enter your name!', 'error'); submitBtn.disabled = false; submitBtn.innerText = 'Create Account'; return; }
-
-                    try {
-                        await API.register(name, email, password, role);
-                    } catch {
-                        // Fallback: save to localStorage
-                        if (GigDB.findUser(email)) { showToast('Account already exists!', 'error'); submitBtn.disabled = false; submitBtn.innerText = 'Create Account'; return; }
-                        GigDB.addUser({ name, email, password, role: role.toUpperCase() });
-                    }
-
-                    // Now login
-                    try {
-                        const resp = await API.login(email, password);
-                        setSession({ token: resp.token, id: resp.id, name: resp.name, email: resp.email, role: resp.role.toLowerCase(), avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${resp.email}` });
-                    } catch {
-                        setSession({ name, email, role, avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}` });
-                    }
-                } else {
-                    try {
-                        const resp = await API.login(email, password);
-                        const userRole = (typeof resp.role === 'string' ? resp.role : resp.role).toString().toLowerCase();
-                        if (userRole !== role) { showToast(`This account is registered as ${userRole}. Select the correct role.`, 'error'); submitBtn.disabled = false; submitBtn.innerText = 'Start Working'; return; }
-                        setSession({ token: resp.token, id: resp.id, name: resp.name, email: resp.email, role: userRole, avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${resp.email}` });
-                    } catch (err) {
-                        // Fallback to localStorage
-                        const found = GigDB.findUser(email);
-                        if (!found || found.password !== password) { showToast('Invalid email or password!', 'error'); submitBtn.disabled = false; submitBtn.innerText = 'Start Working'; return; }
-                        const localRole = (found.role || '').toLowerCase();
-                        if (localRole !== role) { showToast(`This account is ${localRole}. Select the correct role.`, 'error'); submitBtn.disabled = false; submitBtn.innerText = 'Start Working'; return; }
-                        setSession({ name: found.name, email: found.email, role, avatar: found.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}` });
-                    }
+            if (isSignup) {
+                const name = document.getElementById('auth-name').value;
+                if (GigDB.findUser(email)) {
+                    showToast('Account already exists! Please login.', 'error');
+                    return;
                 }
-                window.location.href = role === 'client' ? 'dash-client.html' : 'dash-freelancer.html';
-            } catch (err) {
-                showToast(err.message || 'Authentication failed!', 'error');
-                submitBtn.disabled = false;
-                submitBtn.innerText = isSignup ? 'Create Account' : 'Start Working';
+                GigDB.addUser({ name, email, password, role });
+                GigDB.login({ name, email, role, avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}` });
+            } else {
+                const found = GigDB.findUser(email);
+                if (!found || found.password !== password) {
+                    showToast('Invalid email or password!', 'error');
+                    return;
+                }
+                if (found.role !== role) {
+                    showToast(`This account is registered as ${found.role}. Please select the correct role.`, 'error');
+                    return;
+                }
+                GigDB.login({ name: found.name, email: found.email, role: found.role, avatar: found.avatar });
             }
+            window.location.href = role === 'client' ? 'dash-client.html' : 'dash-freelancer.html';
         });
     }
 
@@ -255,13 +264,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Sidebar Navigation ---
-    window.switchView = (viewId) => {
+    window.switchView = async (viewId) => {
         document.querySelectorAll('.dashboard-view').forEach(v => v.style.display = 'none');
         const target = document.getElementById(viewId);
         if (target) target.style.display = 'block';
         document.querySelectorAll('.sidebar-item').forEach(item => {
             item.classList.toggle('active', item.getAttribute('onclick')?.includes(viewId));
         });
+        // Trigger render on view switch
         if (viewId === 'view-projects') renderClientProjects();
         if (viewId === 'view-explore') renderFreelancerJobs();
         if (viewId === 'view-taken') renderFreelancerTaken();
@@ -313,39 +323,41 @@ function statusLabel(status) {
 // ============================================
 // CLIENT DASHBOARD
 // ============================================
-async function renderClientProjects() {
-    const user = getSession();
+function renderClientProjects() {
+    const user = GigDB.currentUser();
     if (!user) return;
     const container = document.getElementById('projects-list');
     const bidsPanel = document.getElementById('quick-bids');
     if (!container) return;
 
-    let jobs = [];
-    try {
-        jobs = await API.getMyJobs();
-    } catch {
-        jobs = GigDB.getJobsByClient(user.email);
-    }
+    const jobs = GigDB.getJobsByClient(user.email);
 
     if (jobs.length === 0) {
-        container.innerHTML = `<div class="card" style="text-align:center;padding:3rem;color:var(--text-muted);"><i data-lucide="inbox" style="width:48px;height:48px;margin:0 auto 1rem;"></i><p>No projects yet. Post your first job!</p></div>`;
+        container.innerHTML = `<div class="card" style="text-align:center; padding:3rem; color: var(--text-muted);"><i data-lucide="inbox" style="width:48px;height:48px;margin:0 auto 1rem;"></i><p>No projects yet. Post your first job!</p></div>`;
         if (bidsPanel) bidsPanel.innerHTML = '';
-        lucide.createIcons(); return;
+        lucide.createIcons();
+        return;
     }
 
     container.innerHTML = jobs.map(job => {
-        const st = statusLabel(job.status);
-        let bidsCount = '';
-        let actions = '';
+        const bids = GigDB.getBidsForJob(job.id);
+        const statusMap = {
+            open: { label: 'OPEN FOR BIDS', color: 'var(--success)' },
+            assigned: { label: 'IN PROGRESS', color: 'var(--secondary)' },
+            submitted: { label: 'WORK SUBMITTED', color: 'var(--warning)' },
+            completed: { label: 'COMPLETED', color: 'var(--primary)' }
+        };
+        const st = statusMap[job.status] || statusMap.open;
 
-        if (job.status === 'OPEN') {
-            actions = `<button class="btn btn-primary" style="font-size:0.8rem;padding:0.5rem 1rem;" onclick="renderBidsForJob(${job.id})">Show Bids</button>`;
-        } else if (job.status === 'COMPLETED') {
-            actions = `<span style="font-size:0.8rem;color:var(--success);font-weight:700;">✓ Completed</span>`;
-        } else if (job.status === 'HIRED' || job.status === 'IN_PROGRESS') {
-            actions = `<span style="font-size:0.8rem;color:var(--text-muted);">Assigned to ${job.freelancerName || 'freelancer'}</span>`;
-        } else if (job.status === 'SUBMITTED') {
+        let actions = '';
+        if (job.status === 'open') {
+            actions = `<button class="btn btn-primary" style="font-size:0.8rem;padding:0.5rem 1rem;" onclick="renderBidsForJob(${job.id})">Show ${bids.length} Bid${bids.length !== 1 ? 's' : ''}</button>`;
+        } else if (job.status === 'submitted') {
             actions = `<button class="btn btn-primary" style="font-size:0.8rem;padding:0.5rem 1rem;" onclick="reviewAndPay(${job.id})">Review & Pay</button>`;
+        } else if (job.status === 'assigned') {
+            actions = `<span style="font-size:0.8rem;color:var(--text-muted);">Assigned to ${job.assignedTo}</span>`;
+        } else if (job.status === 'completed') {
+            actions = `<span style="font-size:0.8rem;color:var(--success);font-weight:700;">Paid & Completed</span>`;
         }
 
         return `
@@ -358,14 +370,14 @@ async function renderClientProjects() {
                     <span style="font-weight:800;">${formatCurrency(job.budget)}</span>
                 </div>
                 <p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:1rem;">${job.description}</p>
-                <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:1rem;">Posted ${timeAgo(job.createdAt)}</p>
+                <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:1rem;">Deadline: ${job.deadline} • Posted ${timeAgo(job.createdAt)}</p>
                 <div style="display:flex;gap:0.5rem;">${actions}</div>
             </div>`;
     }).join('');
     lucide.createIcons();
 
-    // Show bids for first open job
-    const firstOpen = jobs.find(j => j.status === 'OPEN');
+    // Show bids for the first open job by default
+    const firstOpen = jobs.find(j => j.status === 'open');
     if (firstOpen && bidsPanel) renderBidsForJob(firstOpen.id);
     else if (bidsPanel) bidsPanel.innerHTML = '';
 }
@@ -373,13 +385,7 @@ async function renderClientProjects() {
 async function renderBidsForJob(jobId) {
     const bidsPanel = document.getElementById('quick-bids');
     if (!bidsPanel) return;
-
-    let bids = [];
-    try {
-        bids = await API.getJobBids(jobId);
-    } catch {
-        bids = GigDB.getBidsForJob(jobId);
-    }
+    const bids = GigDB.getBidsForJob(jobId);
 
     if (bids.length === 0) {
         bidsPanel.innerHTML = `<h3 style="margin-bottom:1rem;font-size:1rem;">Proposals (0)</h3><p style="color:var(--text-muted);font-size:0.875rem;">No bids received yet.</p>`;
@@ -390,69 +396,81 @@ async function renderBidsForJob(jobId) {
         bids.map(bid => `
             <div class="card glass animate-fade" style="padding:1rem;border-left:4px solid var(--primary);margin-bottom:1rem;">
                 <div style="display:flex;gap:0.75rem;align-items:center;margin-bottom:0.5rem;">
-                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${bid.freelancerName || bid.freelancerEmail}" style="width:32px;height:32px;border-radius:50%;background:#ddd;">
+                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${bid.freelancerEmail}" style="width:32px;height:32px;border-radius:50%;background:#ddd;">
                     <div>
-                        <p style="font-weight:700;font-size:0.85rem;">${bid.freelancerName || 'Freelancer'}</p>
-                        <p style="font-size:0.7rem;color:var(--text-muted);">${bid.status || 'PENDING'}</p>
+                        <p style="font-weight:700;font-size:0.85rem;">${bid.freelancerName}</p>
+                        <p style="font-size:0.7rem;color:var(--text-muted);display:flex;align-items:center;gap:0.2rem;"><i data-lucide="star" style="width:10px;height:10px;fill:var(--warning);color:var(--warning);"></i> ${bid.rating}</p>
                     </div>
                 </div>
                 <p style="font-size:0.8rem;margin-bottom:1rem;">"${bid.proposal}"</p>
                 <div style="display:flex;justify-content:space-between;align-items:center;">
                     <span style="font-weight:800;font-size:0.9rem;">${formatCurrency(bid.amount)}</span>
-                    ${bid.status === 'PENDING' ? `<button class="btn btn-primary" style="padding:0.3rem 0.6rem;font-size:0.7rem;" onclick="assignFreelancer(${bid.id}, ${jobId})">Assign</button>` : `<span style="color:var(--success);font-weight:700;font-size:0.75rem;">Accepted</span>`}
+                    <button class="btn btn-primary" style="padding:0.3rem 0.6rem;font-size:0.7rem;" onclick="assignFreelancer('${bid.freelancerEmail}','${bid.freelancerName}',${jobId})">Assign</button>
                 </div>
             </div>
         `).join('');
     lucide.createIcons();
 }
 
-async function assignFreelancer(bidId, jobId) {
-    try {
-        await API.acceptBid(bidId);
-        showToast('Freelancer assigned successfully!');
-    } catch {
-        // Fallback
-        const bids = GigDB.getBids();
-        const bid = bids.find(b => b.id === bidId);
-        if (bid) {
-            GigDB.updateJob(jobId, { status: 'HIRED', assignedTo: bid.freelancerEmail, freelancerName: bid.freelancerName });
-        }
-        showToast('Freelancer assigned (offline mode)!');
-    }
+function assignFreelancer(email, name, jobId) {
+    GigDB.updateJob(jobId, { status: 'assigned', assignedTo: email, assignedName: name });
+    showToast(`Job assigned to ${name}!`);
     renderClientProjects();
 }
 
 function reviewAndPay(jobId) {
+    const job = GigDB.getJobs().find(j => j.id === jobId);
+    if (!job) return;
     const modal = document.getElementById('rate-modal');
-    if (modal) { modal.style.display = 'flex'; modal.dataset.jobId = jobId; }
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.dataset.jobId = jobId;
+        document.getElementById('rate-modal-title').innerText = `Review: ${job.title}`;
+        document.getElementById('rate-modal-freelancer').innerText = `Freelancer: ${job.assignedName || job.assignedTo}`;
+    }
 }
 
-async function submitReviewAndPay() {
+function submitReviewAndPay() {
     const modal = document.getElementById('rate-modal');
     const jobId = Number(modal.dataset.jobId);
-    // In a real app this would call a payment API
-    GigDB.updateJob(jobId, { status: 'COMPLETED', paid: true });
+    const review = document.getElementById('rate-review-text').value;
+
+    const job = GigDB.getJobs().find(j => j.id === jobId);
+    GigDB.updateJob(jobId, { status: 'completed', paid: true });
+
+    // Add to history for both client and freelancer
+    GigDB.addHistory({ jobTitle: job.title, amount: job.budget, clientEmail: job.clientEmail, freelancerEmail: job.assignedTo, freelancerName: job.assignedName, clientName: job.clientName, type: 'payment', review: review, status: 'Paid' });
+
+    // Update wallet data on users
+    const clientUser = GigDB.findUser(job.clientEmail);
+    if (clientUser) {
+        GigDB.updateUser(job.clientEmail, {
+            wallet: { ...clientUser.wallet, totalSpent: (clientUser.wallet?.totalSpent || 0) + job.budget, balance: (clientUser.wallet?.balance || 0) - job.budget }
+        });
+    }
+    const flUser = GigDB.findUser(job.assignedTo);
+    if (flUser) {
+        GigDB.updateUser(job.assignedTo, {
+            wallet: { ...flUser.wallet, totalEarned: (flUser.wallet?.totalEarned || 0) + job.budget, balance: (flUser.wallet?.balance || 0) + job.budget }
+        });
+    }
+
     modal.style.display = 'none';
-    showToast('Payment released!');
+    showToast(`Payment of ${formatCurrency(job.budget)} released to ${job.assignedName}!`);
     renderClientProjects();
 }
 
 // Post Job
-async function postNewJob() {
+function postNewJob() {
+    const user = GigDB.currentUser();
     const title = document.getElementById('job-title').value;
     const desc = document.getElementById('job-desc').value;
-    const deadline = document.getElementById('job-deadline').value;
     const budget = document.getElementById('job-budget').value;
-    if (!title || !desc || !budget) { showToast('Please fill all fields!', 'error'); return; }
 
-    try {
-        await API.postJob(title, desc, budget);
-        showToast('Project posted successfully!');
-    } catch {
-        const user = getSession();
-        GigDB.addJob({ title, description: desc, budget: Number(budget), deadline, clientEmail: user.email, clientName: user.name });
-        showToast('Project posted (offline mode)!');
-    }
+    if (!title || !desc || !deadline || !budget) { showToast('Please fill all fields!', 'error'); return; }
+
+    GigDB.addJob({ title, description: desc, budget: Number(budget), deadline, clientEmail: user.email, clientName: user.name });
+    showToast('Project posted successfully!');
     document.getElementById('post-form').reset();
     switchView('view-projects');
 }
@@ -460,22 +478,15 @@ async function postNewJob() {
 // ============================================
 // FREELANCER DASHBOARD
 // ============================================
-async function renderFreelancerJobs() {
-    const user = getSession();
+function renderFreelancerJobs() {
+    const user = GigDB.currentUser();
     if (!user) return;
     const container = document.getElementById('job-feed');
     if (!container) return;
 
-    let jobs = [];
-    let myBidJobIds = [];
-    try {
-        jobs = await API.browseJobs();
-        const myBids = await API.getMyBids();
-        myBidJobIds = myBids.map(b => b.jobId);
-    } catch {
-        jobs = GigDB.getOpenJobs();
-        myBidJobIds = GigDB.getBidsByFreelancer(user.email).map(b => b.jobId);
-    }
+    const jobs = GigDB.getOpenJobs();
+    // Exclude jobs where this freelancer already bid
+    const myBids = GigDB.getBidsByFreelancer(user.email).map(b => b.jobId);
 
     if (jobs.length === 0) {
         container.innerHTML = `<div class="card" style="text-align:center;padding:3rem;color:var(--text-muted);"><p>No jobs available right now. Check back later!</p></div>`;
@@ -483,22 +494,23 @@ async function renderFreelancerJobs() {
     }
 
     container.innerHTML = jobs.map(job => {
-        const alreadyBid = myBidJobIds.includes(job.id);
+        const alreadyBid = myBids.includes(job.id);
         return `
         <div class="card" style="margin-bottom:1.5rem;">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;">
                 <div>
                     <h3 style="color:var(--primary);">${job.title}</h3>
-                    <p style="font-size:0.75rem;color:var(--text-muted);margin:0.5rem 0;">Posted by ${job.clientName || 'Client'} • ${timeAgo(job.createdAt)}</p>
+                    <p style="font-size:0.75rem;color:var(--text-muted);margin:0.5rem 0;">Posted by ${job.clientName} • ${timeAgo(job.createdAt)}</p>
                 </div>
                 <span style="font-weight:800;">${formatCurrency(job.budget)}</span>
             </div>
             <p style="color:var(--text-muted);font-size:0.875rem;margin:1rem 0;">${job.description}</p>
+            <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:1rem;">Deadline: ${job.deadline}</p>
             <div style="display:flex;justify-content:flex-end;">
                 ${alreadyBid
-                    ? `<span style="font-size:0.8rem;color:var(--success);font-weight:700;">Bid Placed</span>`
-                    : `<button class="btn btn-primary" onclick="openBidModal(${job.id},'${job.title.replace(/'/g, "\\'")}')">Place Bid</button>`
-                }
+                ? `<span style="font-size:0.8rem;color:var(--success);font-weight:700;">Bid Placed</span>`
+                : `<button class="btn btn-primary" onclick="openBidModal(${job.id},'${job.title.replace(/'/g, "\\'")}')">Place Bid</button>`
+            }
             </div>
         </div>`;
     }).join('');
@@ -510,78 +522,81 @@ function openBidModal(jobId, jobTitle) {
     document.getElementById('bid-modal-title').innerText = `Bid on: ${jobTitle}`;
 }
 
-async function submitBid() {
-    const user = getSession();
+function submitBid() {
+    const user = GigDB.currentUser();
     const modal = document.getElementById('bid-modal');
     const jobId = Number(modal.dataset.jobId);
     const amount = document.getElementById('bid-amount').value;
     const proposal = document.getElementById('bid-proposal').value;
     if (!amount || !proposal) { showToast('Please fill all fields!', 'error'); return; }
 
-    try {
-        await API.placeBid(jobId, amount, proposal);
-        showToast('Bid placed successfully!');
-    } catch {
-        const job = GigDB.getJobs().find(j => j.id === jobId);
-        GigDB.addBid({ jobId, jobTitle: job?.title || '', freelancerEmail: user.email, freelancerName: user.name, amount: Number(amount), proposal });
-        showToast('Bid placed (offline mode)!');
-    }
+    const job = GigDB.getJobs().find(j => j.id === jobId);
+    GigDB.addBid({ jobId, jobTitle: job.title, freelancerEmail: user.email, freelancerName: user.name, amount: Number(amount), proposal, rating: 4.5 });
+
     modal.style.display = 'none';
     document.getElementById('bid-form').reset();
+    showToast('Bid placed successfully!');
     renderFreelancerJobs();
 }
 
-async function renderFreelancerTaken() {
-    const user = getSession();
+function renderFreelancerTaken() {
+    const user = GigDB.currentUser();
     if (!user) return;
     const container = document.getElementById('taken-list');
     if (!container) return;
 
-    let bids = [];
-    try {
-        bids = await API.getMyBids();
-        bids = bids.filter(b => b.status === 'ACCEPTED');
-    } catch {
-        const jobs = GigDB.getJobsForFreelancer(user.email);
-        bids = jobs.map(j => ({ jobId: j.id, jobTitle: j.title, amount: j.budget, status: j.status }));
-    }
+    const jobs = GigDB.getJobsForFreelancer(user.email);
 
-    if (bids.length === 0) {
+    if (jobs.length === 0) {
         container.innerHTML = `<div class="card" style="text-align:center;padding:3rem;color:var(--text-muted);"><p>No assigned projects yet. Place bids to get started!</p></div>`;
         return;
     }
 
-    container.innerHTML = bids.map(bid => {
-        const isCompleted = bid.status === 'COMPLETED';
-        return `
-        <div class="card" style="margin-bottom:1.5rem;">
-            <div style="display:flex;justify-content:space-between;margin-bottom:1.5rem;">
-                <div>
-                    <h3 style="margin-bottom:0.25rem;">${bid.jobTitle}</h3>
-                    <p style="font-size:0.8rem;color:var(--text-muted);">Status: <span style="color:${isCompleted ? 'var(--success)' : 'var(--secondary)'};font-weight:700;">${isCompleted ? 'Completed' : 'In Progress'}</span></p>
-                </div>
-                <p style="font-weight:800;">${formatCurrency(bid.amount)}</p>
-            </div>
-            ${!isCompleted ? `
+    container.innerHTML = jobs.map(job => {
+        const statusMap = {
+            assigned: { label: 'In Progress', color: 'var(--secondary)' },
+            submitted: { label: 'Submitted - Awaiting Payment', color: 'var(--warning)' },
+            completed: { label: 'Completed & Paid', color: 'var(--success)' }
+        };
+        const st = statusMap[job.status] || statusMap.assigned;
+
+        let actions = '';
+        if (job.status === 'assigned') {
+            actions = `
                 <div style="background:var(--bg-main);padding:1.5rem;border-radius:var(--radius-md);border:1px dashed var(--border);text-align:center;margin-bottom:1.5rem;">
                     <i data-lucide="upload-cloud" style="width:32px;height:32px;color:var(--text-muted);margin-bottom:0.5rem;"></i>
                     <p style="font-size:0.875rem;color:var(--text-muted);">Upload your project work</p>
                 </div>
-                <div style="display:flex;justify-content:flex-end;"><button class="btn btn-primary" onclick="submitWork(${bid.jobId})">Complete / Submit</button></div>
-            ` : `<p style="font-size:0.875rem;color:var(--success);font-weight:600;">Payment received!</p>`}
+                <div style="display:flex;justify-content:flex-end;">
+                    <button class="btn btn-primary" onclick="submitWork(${job.id})">Complete / Submit</button>
+                </div>`;
+        } else if (job.status === 'submitted') {
+            actions = `<p style="font-size:0.875rem;color:var(--warning);font-weight:600;">Awaiting client review & payment...</p>`;
+        } else {
+            actions = `<p style="font-size:0.875rem;color:var(--success);font-weight:600;">Payment received!</p>`;
+        }
+
+        return `
+        <div class="card" style="margin-bottom:1.5rem;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:1.5rem;">
+                <div>
+                    <h3 style="margin-bottom:0.25rem;">${job.title}</h3>
+                    <p style="font-size:0.8rem;color:var(--text-muted);">Status: <span style="color:${st.color};font-weight:700;">${st.label}</span></p>
+                </div>
+                <div style="text-align:right;">
+                    <p style="font-weight:800;">${formatCurrency(job.budget)}</p>
+                    <p style="font-size:0.7rem;color:var(--text-muted);">Deadline: ${job.deadline}</p>
+                </div>
+            </div>
+            ${actions}
         </div>`;
     }).join('');
     lucide.createIcons();
 }
 
-async function submitWork(jobId) {
-    try {
-        await API.markJobCompleted(jobId);
-        showToast('Work submitted! Waiting for client review.');
-    } catch {
-        GigDB.updateJob(jobId, { status: 'SUBMITTED' });
-        showToast('Work submitted (offline mode)!');
-    }
+function submitWork(jobId) {
+    GigDB.updateJob(jobId, { status: 'submitted', submittedWork: true });
+    showToast('Work submitted! Waiting for client review & payment.');
     renderFreelancerTaken();
 }
 
