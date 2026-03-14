@@ -4,5 +4,6 @@ public enum JobStatus {
     OPEN,
     HIRED,
     IN_PROGRESS,
+    SUBMITTED,
     COMPLETED
 }
